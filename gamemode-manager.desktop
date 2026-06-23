@@ -2,7 +2,7 @@
 Categories=Game;Utility;
 Comment[fi_FI]=Manage GameMode, MangoHud, Steam and Heroic game settings
 Comment=Manage GameMode, MangoHud, Steam and Heroic game settings
-Exec=/usr/local/bin/gamemode-manager
+Exec=python3 /home/kale/Documents/gamemode-gui/src/gamemode_manager.py
 GenericName[fi_FI]=
 GenericName=
 Icon=preferences-desktop-gaming
@@ -10,7 +10,7 @@ Keywords=gamemode;mangohud;steam;heroic;gaming;
 MimeType=
 Name[fi_FI]=GameMode Manager
 Name=GameMode Manager
-Path=
+Path=/home/kale/Documents/gamemode-gui
 StartupNotify=true
 Terminal=false
 TerminalOptions=
