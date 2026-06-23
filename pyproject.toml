@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gamemode-manager"
+version = "1.0.0"
+description = "Qt6 GUI for managing GameMode, MangoHud, Steam and Heroic"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "PySide6>=6.5",
+]
+
+[project.scripts]
+gamemode-manager = "gamemode_manager:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.data-files]
+"share/applications" = ["gamemode-manager.desktop"]
+"share/icons/hicolor/scalable/apps" = ["assets/gamemode-manager.svg"]

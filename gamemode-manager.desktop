@@ -1,0 +1,19 @@
+[Desktop Entry]
+Categories=Game;Utility;
+Comment[fi_FI]=Manage GameMode, MangoHud, Steam and Heroic game settings
+Comment=Manage GameMode, MangoHud, Steam and Heroic game settings
+Exec=/usr/local/bin/gamemode-manager
+GenericName[fi_FI]=
+GenericName=
+Icon=preferences-desktop-gaming
+Keywords=gamemode;mangohud;steam;heroic;gaming;
+MimeType=
+Name[fi_FI]=GameMode Manager
+Name=GameMode Manager
+Path=
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-KDE-SubstituteUID=false
+X-KDE-Username=
