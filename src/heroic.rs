@@ -55,7 +55,7 @@ pub fn toggle_heroic(key: &str, enable: bool) -> Result<String, String> {
     std::fs::write(&path, serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?)
         .map_err(|e| e.to_string())?;
 
-    // Update per-game configs in GamesConfig/*.json
+    // Päivitä pelikohtaiset konfit GamesConfig/*.json
     let mut game_count = 0usize;
     let gdir = games_dir();
     if gdir.is_dir() {
@@ -65,27 +65,28 @@ pub fn toggle_heroic(key: &str, enable: bool) -> Result<String, String> {
                 if fpath.extension().and_then(|e| e.to_str()) != Some("json") {
                     continue;
                 }
+                // Pelin UUID = tiedostonimi ilman päätettä
+                let app_name = match fpath.file_stem().and_then(|s| s.to_str()) {
+                    Some(n) => n.to_string(),
+                    None => continue,
+                };
                 let Ok(gtext) = std::fs::read_to_string(&fpath) else { continue; };
                 let Ok(mut gdata) = serde_json::from_str::<Value>(&gtext) else { continue; };
 
+                // Kohdista VAIN pelin UUID-avaimeen (ei "explicit" tai "version")
                 let mut changed = false;
-                if let Some(obj) = gdata.as_object_mut() {
-                    for cfg in obj.values_mut() {
-                        let Some(cfg_obj) = cfg.as_object_mut() else { continue; };
-
-                        // Heroic uses two key names for MangoHud — sync both
-                        let keys: Vec<&str> = if key == "enableMangoHud" || key == "showMangohud" {
-                            vec!["enableMangoHud", "showMangohud"]
-                        } else {
-                            vec![key]
-                        };
-                        for k in &keys {
-                            if let Some(existing) = cfg_obj.get(*k) {
-                                if existing != &Value::Bool(enable) {
-                                    cfg_obj.insert((*k).to_string(), Value::Bool(enable));
-                                    changed = true;
-                                }
-                            }
+                if let Some(cfg_obj) = gdata.get_mut(&app_name).and_then(|v| v.as_object_mut()) {
+                    // Heroic käyttää kahta eri nimeä MangoHudille — päivitä molemmat
+                    let keys: Vec<&str> = if key == "enableMangoHud" || key == "showMangohud" {
+                        vec!["enableMangoHud", "showMangohud"]
+                    } else {
+                        vec![key.as_ref()]
+                    };
+                    for k in &keys {
+                        let current = cfg_obj.get(*k).and_then(|v| v.as_bool());
+                        if current != Some(enable) {
+                            cfg_obj.insert((*k).to_string(), Value::Bool(enable));
+                            changed = true;
                         }
                     }
                 }
@@ -104,7 +105,8 @@ pub fn toggle_heroic(key: &str, enable: bool) -> Result<String, String> {
         "Heroic {key} -> {enable}, updated {game_count} game configs"
     ));
     Ok(format!(
-        "{key} {} ({game_count} games updated)",
-        if enable { "enabled" } else { "disabled" }
+        "{key} {} — {} pelikohtaista konffitiedostoa päivitetty",
+        if enable { "käytössä" } else { "pois käytöstä" },
+        game_count
     ))
 }

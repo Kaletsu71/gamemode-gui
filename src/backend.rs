@@ -5,6 +5,7 @@ use std::sync::mpsc::Sender;
 pub enum BackendMsg {
     GameModeStatus(String),
     MangoHudInstalled(bool),
+    HeroicInstalled(bool),
     HeroicGmStatus(bool),
     HeroicMhStatus(bool),
     SteamGmStatus(bool),
@@ -51,10 +52,18 @@ fn distro_name() -> String {
 
 // ── spawners ───────────────────────────────────────────────────
 
+fn heroic_in_path() -> bool {
+    std::env::var("PATH")
+        .unwrap_or_default()
+        .split(':')
+        .any(|dir| std::path::Path::new(dir).join("heroic").exists())
+}
+
 pub fn spawn_status_check(tx: Sender<BackendMsg>, ctx: Context) {
     std::thread::spawn(move || {
         tx.send(BackendMsg::GameModeStatus(check_gamemode_status())).ok();
         tx.send(BackendMsg::MangoHudInstalled(mangohud_in_path())).ok();
+        tx.send(BackendMsg::HeroicInstalled(heroic_in_path())).ok();
         tx.send(BackendMsg::HeroicGmStatus(heroic::get_heroic_bool("useGameMode"))).ok();
         tx.send(BackendMsg::HeroicMhStatus(heroic::get_heroic_bool("enableMangoHud"))).ok();
         tx.send(BackendMsg::SteamGmStatus(steam::steam_has_gamemode())).ok();
@@ -117,10 +126,32 @@ pub fn spawn_steam_mangohud(tx: Sender<BackendMsg>, ctx: Context) {
     });
 }
 
+fn kill_heroic() {
+    let _ = std::process::Command::new("pkill").args(["-f", "heroic"]).output();
+    for _ in 0..10 {
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        let running = std::process::Command::new("pgrep")
+            .args(["-f", "heroic"])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+        if !running { break; }
+    }
+}
+
+fn start_heroic() {
+    let _ = std::process::Command::new("heroic")
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+}
+
 pub fn spawn_heroic_toggle(key: String, enable: bool, tx: Sender<BackendMsg>, ctx: Context) {
     std::thread::spawn(move || {
+        kill_heroic();
         let msg = match heroic::toggle_heroic(&key, enable) {
-            Ok(m) => BackendMsg::OperationDone(m),
+            Ok(m) => { start_heroic(); BackendMsg::OperationDone(format!("{m} — Heroic käynnistetty uudelleen")) }
             Err(e) => BackendMsg::Error(e),
         };
         tx.send(msg).ok();

@@ -27,6 +27,7 @@ pub struct GameModeApp {
     // Tilamuuttujat — päivittyvät taustasäikeistä
     gamemode_status: String,   // "ON", "OFF" tai "Not installed"
     mangohud_installed: bool,
+    heroic_installed: bool,
     heroic_gm: bool,
     heroic_mh: bool,
     steam_gm: bool,
@@ -55,6 +56,7 @@ impl GameModeApp {
             rx,
             gamemode_status: "—".to_string(),
             mangohud_installed: false,
+            heroic_installed: false,
             heroic_gm: false,
             heroic_mh: false,
             steam_gm: false,
@@ -78,6 +80,7 @@ impl GameModeApp {
             match msg {
                 BackendMsg::GameModeStatus(s) => self.gamemode_status = s,
                 BackendMsg::MangoHudInstalled(b) => self.mangohud_installed = b,
+                BackendMsg::HeroicInstalled(b) => self.heroic_installed = b,
                 BackendMsg::HeroicGmStatus(b)  => self.heroic_gm = b,
                 BackendMsg::HeroicMhStatus(b)  => self.heroic_mh = b,
                 BackendMsg::SteamGmStatus(b)   => self.steam_gm = b,
@@ -307,57 +310,66 @@ impl eframe::App for GameModeApp {
                         // ── Heroic Games Launcher ──────────────
                         card_frame().show(ui, |ui| {
                             card_title(ui, "Heroic Games Launcher");
+                            status_row(ui, "Heroic:",
+                                if self.heroic_installed { "Asennettu" } else { "Ei asennettu" }
+                            );
                             status_row(ui, "GameMode:", if self.heroic_gm { "ON" } else { "OFF" });
                             status_row(ui, "MangoHud:", if self.heroic_mh { "ON" } else { "OFF" });
                             ui.add_space(6.0);
 
-                            // Toggle GameMode Heroicissa
-                            let gm = self.heroic_gm;
-                            if colored_wide_button(
-                                ui,
-                                if gm { "⏹ Poista käytöstä GameMode (Heroic)" }
-                                else  { "▶ Ota käyttöön GameMode (Heroic)" },
-                                if gm { RED } else { GREEN },
-                                !self.busy,
-                            ) {
-                                let new_val = !gm;
-                                self.heroic_gm = new_val;
+                            let enabled = !self.busy && self.heroic_installed;
+
+                            // GameMode: erilliset Lisää/Poista-napit (kuten Steamissa)
+                            if colored_wide_button(ui, "➕ Lisää GameMode → Heroic", GREEN, enabled) {
                                 self.busy = true;
-                                self.status_bar = "Muutetaan Heroic GameMode...".to_string();
+                                self.status_bar = "Suljetaan Heroic ja lisätään GameMode...".to_string();
                                 backend::spawn_heroic_toggle(
-                                    "useGameMode".to_string(), new_val,
+                                    "useGameMode".to_string(), true,
                                     self.tx.clone(), ctx.clone(),
                                 );
                             }
-
-                            // Toggle MangoHud Heroicissa
-                            let mh = self.heroic_mh;
-                            if colored_wide_button(
-                                ui,
-                                if mh { "⏹ Poista käytöstä MangoHud (Heroic)" }
-                                else  { "▶ Ota käyttöön MangoHud (Heroic)" },
-                                if mh { RED } else { GREEN },
-                                !self.busy,
-                            ) {
-                                let new_val = !mh;
-                                self.heroic_mh = new_val;
+                            if colored_wide_button(ui, "➖ Poista GameMode ← Heroic", RED, enabled) {
                                 self.busy = true;
-                                self.status_bar = "Muutetaan Heroic MangoHud...".to_string();
+                                self.status_bar = "Suljetaan Heroic ja poistetaan GameMode...".to_string();
                                 backend::spawn_heroic_toggle(
-                                    "enableMangoHud".to_string(), new_val,
+                                    "useGameMode".to_string(), false,
+                                    self.tx.clone(), ctx.clone(),
+                                );
+                            }
+                            ui.add_space(4.0);
+                            // MangoHud: erilliset Lisää/Poista-napit
+                            if colored_wide_button(ui, "➕ Lisää MangoHud → Heroic", GREEN, enabled) {
+                                self.busy = true;
+                                self.status_bar = "Suljetaan Heroic ja lisätään MangoHud...".to_string();
+                                backend::spawn_heroic_toggle(
+                                    "enableMangoHud".to_string(), true,
+                                    self.tx.clone(), ctx.clone(),
+                                );
+                            }
+                            if colored_wide_button(ui, "➖ Poista MangoHud ← Heroic", RED, enabled) {
+                                self.busy = true;
+                                self.status_bar = "Suljetaan Heroic ja poistetaan MangoHud...".to_string();
+                                backend::spawn_heroic_toggle(
+                                    "enableMangoHud".to_string(), false,
                                     self.tx.clone(), ctx.clone(),
                                 );
                             }
 
                             ui.add_space(4.0);
-                            if wide_button(ui, "🚀 Käynnistä Heroic", true) {
-                                let _ = std::process::Command::new("heroic")
-                                    .stdout(std::process::Stdio::null())
-                                    .stderr(std::process::Stdio::null())
-                                    .spawn();
-                                self.notification = Some((
-                                    "Heroic käynnistetty".to_string(), ACCENT, Instant::now()
-                                ));
+                            if wide_button(ui, "🚀 Käynnistä Heroic", !self.busy) {
+                                if self.heroic_installed {
+                                    let _ = std::process::Command::new("heroic")
+                                        .stdout(std::process::Stdio::null())
+                                        .stderr(std::process::Stdio::null())
+                                        .spawn();
+                                    self.notification = Some((
+                                        "Heroic käynnistetty".to_string(), ACCENT, Instant::now()
+                                    ));
+                                } else {
+                                    self.notification = Some((
+                                        "Heroic ei ole asennettu".to_string(), RED, Instant::now()
+                                    ));
+                                }
                             }
                         });
 
