@@ -18,18 +18,15 @@ pub enum BackendMsg {
 // ── helpers ────────────────────────────────────────────────────
 
 pub fn check_gamemode_status() -> String {
-    match std::process::Command::new("gamemoded")
-        .arg("-s")
-        .output()
-    {
+    // gamemoded -s kysyy daemonilta tilan ilman että se käynnistää daemonia
+    match std::process::Command::new("gamemoded").arg("-s").output() {
         Ok(out) => {
-            let stdout = String::from_utf8_lossy(&out.stdout).to_lowercase();
-            if stdout.contains("is active") || stdout.contains("is on") {
-                "ON".to_string()
-            } else {
-                "OFF".to_string()
-            }
+            let text = String::from_utf8_lossy(&out.stdout).to_lowercase();
+            config::log_entry(&format!("gamemoded -s: {}", text.trim()));
+            // "gamemode is active" → ON, "gamemode is inactive" → OFF
+            if text.contains("is active") { "ON".to_string() } else { "OFF".to_string() }
         }
+        // Binääriä ei löydy → ei asenettu
         Err(_) => "Not installed".to_string(),
     }
 }
@@ -69,10 +66,38 @@ pub fn spawn_status_check(tx: Sender<BackendMsg>, ctx: Context) {
     });
 }
 
+// Sulje Steam siististi -shutdown-signaalilla, odota sammuminen
+fn kill_steam() {
+    // Pyydä Steamia sulkeutumaan siististi (siivoaa lukitustiedostot)
+    let _ = std::process::Command::new("steam").arg("-shutdown").output();
+    // Odota max 8 sekuntia että Steam sammuu kokonaan
+    for _ in 0..16 {
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        let running = std::process::Command::new("pgrep")
+            .args(["-f", "steam.sh"])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+        if !running { break; }
+    }
+    // Pakkosulje jos vielä käynnissä
+    let _ = std::process::Command::new("pkill").args(["-9", "-f", "steam.sh"]).output();
+    std::thread::sleep(std::time::Duration::from_millis(500));
+}
+
+fn start_steam() {
+    let _ = std::process::Command::new("steam")
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+}
+
 pub fn spawn_steam_gamemode(tx: Sender<BackendMsg>, ctx: Context) {
     std::thread::spawn(move || {
+        kill_steam();
         let msg = match steam::add_launch_option("gamemoderun") {
-            Ok(m) => BackendMsg::OperationDone(m),
+            Ok(m) => { start_steam(); BackendMsg::OperationDone(format!("{m} — Steam käynnistetty uudelleen")) }
             Err(e) => BackendMsg::Error(e),
         };
         tx.send(msg).ok();
@@ -82,8 +107,9 @@ pub fn spawn_steam_gamemode(tx: Sender<BackendMsg>, ctx: Context) {
 
 pub fn spawn_steam_mangohud(tx: Sender<BackendMsg>, ctx: Context) {
     std::thread::spawn(move || {
+        kill_steam();
         let msg = match steam::add_launch_option("mangohud") {
-            Ok(m) => BackendMsg::OperationDone(m),
+            Ok(m) => { start_steam(); BackendMsg::OperationDone(format!("{m} — Steam käynnistetty uudelleen")) }
             Err(e) => BackendMsg::Error(e),
         };
         tx.send(msg).ok();
@@ -142,8 +168,9 @@ pub fn spawn_install_mangohud(tx: Sender<BackendMsg>, ctx: Context) {
 
 pub fn spawn_steam_remove(cmd: &'static str, tx: Sender<BackendMsg>, ctx: Context) {
     std::thread::spawn(move || {
+        kill_steam();
         let msg = match steam::remove_launch_option(cmd) {
-            Ok(m) => BackendMsg::OperationDone(m),
+            Ok(m) => { start_steam(); BackendMsg::OperationDone(format!("{m} — Steam käynnistetty uudelleen")) }
             Err(e) => BackendMsg::Error(e),
         };
         tx.send(msg).ok();
