@@ -1,67 +1,125 @@
 # GameMode Manager
 
-Qt6/PySide6 GUI GameMode + MangoHud + Steam + Heroic.
+Rust + egui -pohjainen graafinen työkalu Linux-pelaamisen suorituskykytyökalujen hallintaan.
 
-## Asennus
+## Ominaisuudet
 
-### Vaatimukset
-- Python 3.10+
-- PySide6
-- gamemoded (GameMode)
-- mangohud
-- Steam (valinnainen)
-- Heroic (valinnainen)
+- GameMode ja MangoHud asennuksen tarkistus ja asennus
+- Steam-käynnistysasetusten hallinta kaikille peleille (sulkee ja käynnistää Steamin automaattisesti)
+- Heroic Games Launcher -integraatio (GameMode / MangoHud toggle)
+- Live-tilanäyttö (distro, daemon-tila, asetukset)
+- Catppuccin Mocha -tumma teema
+- Yksi itsellinen binääri — ei Python- tai Qt-riippuvuuksia
 
-### Asennus venv:llä (ilman sudoa)
+---
+
+## Asennus (RPM — openSUSE / Fedora)
+
+### Lataa valmis paketti
 
 ```bash
+# Kloonaa repo
+git clone https://github.com/Kaletsu71/gamemode-gui.git
 cd gamemode-gui
-python3 -m venv .venv
-source .venv/bin/activate
-pip install .
-gamemode-manager
 ```
 
-### Suora käynnistys ilman asennusta
+Valmis RPM löytyy `releases/`-kansiosta:
+
+```
+releases/gamemode-manager-1.0.0.1-0.x86_64.rpm
+```
+
+### Asenna
 
 ```bash
-cd gamemode-gui
-python3 src/gamemode_manager.py
+sudo zypper install releases/gamemode-manager-1.0.0.1-0.x86_64.rpm
 ```
 
-### Ohitus .desktop-tiedostolla
+tai Fedoralla:
 
 ```bash
-gtk-launch gamemode-manager
+sudo dnf install releases/gamemode-manager-1.0.0.1-0.x86_64.rpm
 ```
+
+### Käynnistä
+
+Sovellus löytyy sovellusvalikosta nimellä **GameMode Manager**, tai komentoriviltä:
+
+```bash
+gamemode
+```
+
+---
 
 ## Käyttö
 
-- **GameMode toggle**: päälle/pois Heroicille ja Steamille
-- **MangoHud toggle**: päälle/pois Heroicille ja Steamille
-- **Status-näyttö**: näyttää GameMode/MangoHud tilan reaaliajassa
-- **Live Info**: distro, GM/MH-tila
+### Asennus-kortti
 
-### Steam
+| Painike | Toiminto |
+|---------|----------|
+| ⬇ Asenna GameMode | Asentaa `gamemode`-paketin (vaatii salasanan) |
+| ↺ Tarkista GameMode | Tarkistaa onko `gamemoded` asennettu |
+| ⬇ Asenna MangoHud | Asentaa `mangohud`-paketin (vaatii salasanan) |
+| ↺ Tarkista MangoHud | Tarkistaa onko `mangohud` asennettu |
 
-- Add GameMode launch options - lisää `gamemoderun %command%` kaikkiin Steam-peleihin
-- Add MangoHud launch options - lisää `mangohud %command%` kaikkiin Steam-peleihin
+### Steam-integraatio
 
-### Heroic
+| Painike | Toiminto |
+|---------|----------|
+| ➕ Lisää GameMode | Lisää `gamemoderun %command%` kaikkiin Steam-peleihin |
+| ➖ Poista GameMode | Poistaa `gamemoderun` kaikkien Steam-pelien käynnistysasetuksista |
+| ➕ Lisää MangoHud | Lisää `mangohud %command%` kaikkiin Steam-peleihin |
+| ➖ Poista MangoHud | Poistaa `mangohud` kaikkien Steam-pelien käynnistysasetuksista |
 
-Peli- ja globaali asetuspainikkeet tallentuvat Heroicin config.json ja GamesConfig/*.json -tiedostoihin.
+> **Huom:** Steam suljetaan ja käynnistetään automaattisesti uudelleen muutosten jälkeen, jotta VDF-tiedoston muutokset tallentuvat oikein.
 
-## Kääntäminen
+### Heroic Games Launcher
+
+| Painike | Toiminto |
+|---------|----------|
+| ▶ Ota käyttöön GameMode | Kytkee GameModen päälle Heroicissa |
+| ⏹ Poista käytöstä GameMode | Kytkee GameModen pois Heroicissa |
+| ▶ Ota käyttöön MangoHud | Kytkee MangoHudin päälle Heroicissa |
+| ⏹ Poista käytöstä MangoHud | Kytkee MangoHudin pois Heroicissa |
+| 🚀 Käynnistä Heroic | Käynnistää Heroic Games Launcherin |
+
+---
+
+## Rakentaminen lähdekoodista
+
+### Vaatimukset
 
 ```bash
-make run
-make package
-make clean
+# openSUSE
+sudo zypper install rust cargo pkgconfig libGL-devel libX11-devel libXrandr-devel fontconfig-devel
+
+# Fedora
+sudo dnf install rust cargo pkgconfig mesa-libGL-devel libX11-devel libXrandr-devel fontconfig-devel
 ```
 
-## Komentoja
+### Käännä ja aja
 
-- `make run` - käynnistä ilman asennusta
-- `make install` - asenna järjestelmään (vaatii sudon)
-- `make uninstall` - poista asennus
-- `make package` - tee Python-paketti
+```bash
+cargo build --release
+./target/release/gamemode
+```
+
+### Asenna järjestelmään
+
+```bash
+make install
+```
+
+### Rakenna RPM
+
+```bash
+make rpm
+```
+
+Valmis paketti ilmestyy hakemistoon `~/rpmbuild/RPMS/x86_64/`.
+
+---
+
+## Lisenssi
+
+MIT — katso [LICENSE](LICENSE)
