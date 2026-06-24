@@ -23,12 +23,6 @@ git clone https://github.com/Kaletsu71/gamemode-gui.git
 cd gamemode-gui
 ```
 
-Valmis RPM löytyy `releases/`-kansiosta:
-
-```
-releases/gamemode-manager-1.0.0.1-0.x86_64.rpm
-```
-
 ### Asenna
 
 ```bash
