@@ -1,0 +1,21 @@
+[package]
+name = "gamemode"
+version = "1.0.0"
+edition = "2021"
+description = "Qt6 GUI for managing GameMode, MangoHud, Steam and Heroic"
+license = "MIT"
+
+[dependencies]
+eframe = { version = "0.28", features = ["default_fonts"] }
+egui = "0.28"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+dirs = "5"
+chrono = { version = "0.4", features = ["clock"] }
+
+[profile.release]
+opt-level = 3
+strip = true
+lto = true
+codegen-units = 1
