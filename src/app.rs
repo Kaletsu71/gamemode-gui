@@ -147,11 +147,18 @@ impl eframe::App for GameModeApp {
                             );
                             ui.add_space(6.0);
 
-                            if wide_button(ui, "Check GameMode", !self.busy) {
+                            // GameMode — tarkista tai asenna
+                            if self.gamemode_status == "Not installed" {
+                                if colored_wide_button(ui, "Asenna GameMode", ACCENT, !self.busy) {
+                                    self.busy = true;
+                                    self.status_bar = "Asennetaan GameMode (pkexec)...".to_string();
+                                    backend::spawn_install_gamemode(self.tx.clone(), ctx.clone());
+                                }
+                            } else if wide_button(ui, "Tarkista GameMode", !self.busy) {
                                 let tx = self.tx.clone();
                                 let ctx2 = ctx.clone();
                                 self.busy = true;
-                                self.status_bar = "Checking GameMode...".to_string();
+                                self.status_bar = "Tarkistetaan GameMode...".to_string();
                                 std::thread::spawn(move || {
                                     let s = backend::check_gamemode_status();
                                     tx.send(BackendMsg::GameModeStatus(s)).ok();
@@ -160,17 +167,27 @@ impl eframe::App for GameModeApp {
                                 });
                             }
 
-                            if wide_button(ui, "Check MangoHud", !self.busy) {
-                                let found = std::env::var("PATH")
-                                    .unwrap_or_default()
-                                    .split(':')
-                                    .any(|d| std::path::Path::new(d).join("mangohud").exists());
-                                self.mangohud_installed = found;
-                                self.status_bar = if found {
-                                    "MangoHud: installed".to_string()
-                                } else {
-                                    "MangoHud: not found in PATH".to_string()
-                                };
+                            // MangoHud — tarkista tai asenna
+                            if !self.mangohud_installed {
+                                if colored_wide_button(ui, "Asenna MangoHud", ACCENT, !self.busy) {
+                                    self.busy = true;
+                                    self.status_bar = "Asennetaan MangoHud (pkexec)...".to_string();
+                                    backend::spawn_install_mangohud(self.tx.clone(), ctx.clone());
+                                }
+                            } else if wide_button(ui, "Tarkista MangoHud", !self.busy) {
+                                let tx = self.tx.clone();
+                                let ctx2 = ctx.clone();
+                                self.busy = true;
+                                self.status_bar = "Tarkistetaan MangoHud...".to_string();
+                                std::thread::spawn(move || {
+                                    let found = std::env::var("PATH")
+                                        .unwrap_or_default()
+                                        .split(':')
+                                        .any(|d| std::path::Path::new(d).join("mangohud").exists());
+                                    tx.send(BackendMsg::MangoHudInstalled(found)).ok();
+                                    tx.send(BackendMsg::StatusDone).ok();
+                                    ctx2.request_repaint();
+                                });
                             }
                         });
 
@@ -191,15 +208,26 @@ impl eframe::App for GameModeApp {
                             );
                             ui.add_space(6.0);
 
-                            if wide_button(ui, "Add GameMode → ALL Steam games", !self.busy) {
+                            if colored_wide_button(ui, "Lisää GameMode → kaikki Steam-pelit", GREEN, !self.busy) {
                                 self.busy = true;
-                                self.status_bar = "Adding GameMode to Steam games...".to_string();
+                                self.status_bar = "Lisätään GameMode Steam-peleihin...".to_string();
                                 backend::spawn_steam_gamemode(self.tx.clone(), ctx.clone());
                             }
-                            if wide_button(ui, "Add MangoHud → ALL Steam games", !self.busy) {
+                            if colored_wide_button(ui, "Poista GameMode ← kaikki Steam-pelit", RED, !self.busy) {
                                 self.busy = true;
-                                self.status_bar = "Adding MangoHud to Steam games...".to_string();
+                                self.status_bar = "Poistetaan GameMode Steam-peleistä...".to_string();
+                                backend::spawn_steam_remove("gamemoderun", self.tx.clone(), ctx.clone());
+                            }
+                            ui.add_space(4.0);
+                            if colored_wide_button(ui, "Lisää MangoHud → kaikki Steam-pelit", GREEN, !self.busy) {
+                                self.busy = true;
+                                self.status_bar = "Lisätään MangoHud Steam-peleihin...".to_string();
                                 backend::spawn_steam_mangohud(self.tx.clone(), ctx.clone());
+                            }
+                            if colored_wide_button(ui, "Poista MangoHud ← kaikki Steam-pelit", RED, !self.busy) {
+                                self.busy = true;
+                                self.status_bar = "Poistetaan MangoHud Steam-peleistä...".to_string();
+                                backend::spawn_steam_remove("mangohud", self.tx.clone(), ctx.clone());
                             }
                         });
 

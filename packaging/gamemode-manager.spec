@@ -6,7 +6,7 @@
 #
 
 Name:           gamemode-manager
-Version:        1.0.0
+Version:        1.0.0.1
 Release:        0
 Summary:        GUI for managing GameMode, MangoHud, Steam and Heroic
 License:        MIT
@@ -48,6 +48,9 @@ cargo build --release --locked
 install -Dm755 target/release/gamemode \
     %{buildroot}%{_bindir}/gamemode
 
+install -Dm755 packaging/gamemode-launch \
+    %{buildroot}%{_bindir}/gamemode-launch
+
 install -Dm644 gamemode-manager.desktop \
     %{buildroot}%{_datadir}/applications/gamemode-manager.desktop
 
@@ -69,11 +72,12 @@ desktop-file-validate \
 %license LICENSE
 %doc README.md
 %{_bindir}/gamemode
+%{_bindir}/gamemode-launch
 %{_datadir}/applications/gamemode-manager.desktop
 %{_datadir}/icons/hicolor/scalable/apps/gamemode-manager.svg
 
 %changelog
-* Tue Jun 24 2026 Kalervo Konttinen <kalervo.konttinen@gmail.com> - 1.0.0-0
+* Tue Jun 24 2025 Kalervo Konttinen <kalervo.konttinen@gmail.com> - 1.0.0-0
 - Rewrite in Rust + egui (Catppuccin Mocha dark theme)
 - Single self-contained binary, no Python/Qt runtime required
 - Auto-discovery of Steam userdata directory

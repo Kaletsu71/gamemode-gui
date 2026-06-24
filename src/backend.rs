@@ -24,11 +24,10 @@ pub fn check_gamemode_status() -> String {
     {
         Ok(out) => {
             let stdout = String::from_utf8_lossy(&out.stdout).to_lowercase();
-            if stdout.contains("active") || stdout.contains("on") {
+            if stdout.contains("is active") || stdout.contains("is on") {
                 "ON".to_string()
             } else {
-                let raw = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                if raw.is_empty() { "OFF".to_string() } else { raw }
+                "OFF".to_string()
             }
         }
         Err(_) => "Not installed".to_string(),
@@ -95,6 +94,55 @@ pub fn spawn_steam_mangohud(tx: Sender<BackendMsg>, ctx: Context) {
 pub fn spawn_heroic_toggle(key: String, enable: bool, tx: Sender<BackendMsg>, ctx: Context) {
     std::thread::spawn(move || {
         let msg = match heroic::toggle_heroic(&key, enable) {
+            Ok(m) => BackendMsg::OperationDone(m),
+            Err(e) => BackendMsg::Error(e),
+        };
+        tx.send(msg).ok();
+        ctx.request_repaint();
+    });
+}
+
+pub fn do_install(pkg: &str) -> Result<String, String> {
+    pkexec_install(pkg)
+}
+
+fn pkexec_install(pkg: &str) -> Result<String, String> {
+    let out = std::process::Command::new("pkexec")
+        .args(["zypper", "install", "-y", pkg])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if out.status.success() {
+        Ok(format!("{pkg} asennettu!"))
+    } else {
+        Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+    }
+}
+
+pub fn spawn_install_gamemode(tx: Sender<BackendMsg>, ctx: Context) {
+    std::thread::spawn(move || {
+        let msg = match pkexec_install("gamemode") {
+            Ok(m) => BackendMsg::OperationDone(m),
+            Err(e) => BackendMsg::Error(e),
+        };
+        tx.send(msg).ok();
+        ctx.request_repaint();
+    });
+}
+
+pub fn spawn_install_mangohud(tx: Sender<BackendMsg>, ctx: Context) {
+    std::thread::spawn(move || {
+        let msg = match pkexec_install("mangohud") {
+            Ok(m) => BackendMsg::OperationDone(m),
+            Err(e) => BackendMsg::Error(e),
+        };
+        tx.send(msg).ok();
+        ctx.request_repaint();
+    });
+}
+
+pub fn spawn_steam_remove(cmd: &'static str, tx: Sender<BackendMsg>, ctx: Context) {
+    std::thread::spawn(move || {
+        let msg = match steam::remove_launch_option(cmd) {
             Ok(m) => BackendMsg::OperationDone(m),
             Err(e) => BackendMsg::Error(e),
         };

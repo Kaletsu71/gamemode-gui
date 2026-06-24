@@ -1,0 +1,6 @@
+#!/bin/bash
+XDG_RUNTIME_DIR="/run/user/$(id -u)"
+WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+DISPLAY="${DISPLAY:-:0}"
+export XDG_RUNTIME_DIR WAYLAND_DISPLAY DISPLAY
+exec /usr/bin/gamemode "$@"
