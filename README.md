@@ -26,13 +26,13 @@ cd gamemode-gui
 ### Asenna
 
 ```bash
-sudo zypper install releases/gamemode-manager-1.0.0.1-0.x86_64.rpm
+sudo zypper install releases/gamemode-manager-1.1.0-0.x86_64.rpm
 ```
 
 tai Fedoralla:
 
 ```bash
-sudo dnf install releases/gamemode-manager-1.0.0.1-0.x86_64.rpm
+sudo dnf install releases/gamemode-manager-1.1.0-0.x86_64.rpm
 ```
 
 ### Käynnistä

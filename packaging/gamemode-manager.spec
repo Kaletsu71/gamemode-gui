@@ -6,7 +6,7 @@
 #
 
 Name:           gamemode-manager
-Version:        1.0.0.1
+Version:        1.1.0
 Release:        0
 Summary:        GUI for managing GameMode, MangoHud, Steam and Heroic
 License:        MIT
@@ -77,6 +77,11 @@ desktop-file-validate \
 %{_datadir}/icons/hicolor/scalable/apps/gamemode-manager.svg
 
 %changelog
+* Tue Jun 30 2026 Kalervo Konttinen <kalervo.konttinen@gmail.com> - 1.1.0-0
+- Add "AI-mallit pelatessa" card: AI VRAM hook integration
+- Installs gamemode.ini [custom] start/end hooks that stop local
+  llama.cpp model services while gaming and restart them afterwards
+
 * Tue Jun 24 2025 Kalervo Konttinen <kalervo.konttinen@gmail.com> - 1.0.0-0
 - Rewrite in Rust + egui (Catppuccin Mocha dark theme)
 - Single self-contained binary, no Python/Qt runtime required

@@ -3,7 +3,7 @@
 # Käyttö: bash packaging/build-rpm.sh
 set -euo pipefail
 
-VERSION=1.0.0.1
+VERSION=1.1.0
 PKGNAME="gamemode-manager-${VERSION}"
 SPECDIR="${HOME}/rpmbuild/SPECS"
 SOURCEDIR="${HOME}/rpmbuild/SOURCES"
