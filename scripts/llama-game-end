@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# GameMode custom hook: runs when a game ENDS.
+# Starts the local llama.cpp models back up.
+# Installed by GameMode Manager.
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+LOG="${XDG_DATA_HOME:-$HOME/.local/share}/llama-game.log"
+echo "$(date '+%F %T') GAME END -> llama start" >> "$LOG"
+/usr/bin/systemctl --user start llama-ornith.service llama-qwen.service >> "$LOG" 2>&1

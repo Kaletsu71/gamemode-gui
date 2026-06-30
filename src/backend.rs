@@ -1,4 +1,4 @@
-use crate::{config, heroic, steam};
+use crate::{aihook, config, heroic, steam};
 use egui::Context;
 use std::sync::mpsc::Sender;
 
@@ -10,6 +10,7 @@ pub enum BackendMsg {
     HeroicMhStatus(bool),
     SteamGmStatus(bool),
     SteamMhStatus(bool),
+    AiHookStatus(bool),
     Distro(String),
     StatusDone,
     OperationDone(String),
@@ -68,6 +69,7 @@ pub fn spawn_status_check(tx: Sender<BackendMsg>, ctx: Context) {
         tx.send(BackendMsg::HeroicMhStatus(heroic::get_heroic_bool("enableMangoHud"))).ok();
         tx.send(BackendMsg::SteamGmStatus(steam::steam_has_gamemode())).ok();
         tx.send(BackendMsg::SteamMhStatus(steam::steam_has_mangohud())).ok();
+        tx.send(BackendMsg::AiHookStatus(aihook::is_installed())).ok();
         tx.send(BackendMsg::Distro(distro_name())).ok();
         tx.send(BackendMsg::StatusDone).ok();
         config::log_entry("Status check done");
@@ -159,10 +161,6 @@ pub fn spawn_heroic_toggle(key: String, enable: bool, tx: Sender<BackendMsg>, ct
     });
 }
 
-pub fn do_install(pkg: &str) -> Result<String, String> {
-    pkexec_install(pkg)
-}
-
 fn pkexec_install(pkg: &str) -> Result<String, String> {
     let out = std::process::Command::new("pkexec")
         .args(["zypper", "install", "-y", pkg])
@@ -202,6 +200,28 @@ pub fn spawn_steam_remove(cmd: &'static str, tx: Sender<BackendMsg>, ctx: Contex
         kill_steam();
         let msg = match steam::remove_launch_option(cmd) {
             Ok(m) => { start_steam(); BackendMsg::OperationDone(format!("{m} — Steam käynnistetty uudelleen")) }
+            Err(e) => BackendMsg::Error(e),
+        };
+        tx.send(msg).ok();
+        ctx.request_repaint();
+    });
+}
+
+pub fn spawn_install_ai_hook(tx: Sender<BackendMsg>, ctx: Context) {
+    std::thread::spawn(move || {
+        let msg = match aihook::install() {
+            Ok(m) => BackendMsg::OperationDone(m),
+            Err(e) => BackendMsg::Error(e),
+        };
+        tx.send(msg).ok();
+        ctx.request_repaint();
+    });
+}
+
+pub fn spawn_remove_ai_hook(tx: Sender<BackendMsg>, ctx: Context) {
+    std::thread::spawn(move || {
+        let msg = match aihook::remove() {
+            Ok(m) => BackendMsg::OperationDone(m),
             Err(e) => BackendMsg::Error(e),
         };
         tx.send(msg).ok();
