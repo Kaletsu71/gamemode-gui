@@ -32,6 +32,7 @@ pub struct GameModeApp {
     heroic_mh: bool,
     steam_gm: bool,
     steam_mh: bool,
+    ai_hook: bool,
     distro: String,
 
     // UI-tila
@@ -61,6 +62,7 @@ impl GameModeApp {
             heroic_mh: false,
             steam_gm: false,
             steam_mh: false,
+            ai_hook: false,
             distro: "—".to_string(),
             status_bar: "Tarkistetaan tilaa...".to_string(),
             busy: true,
@@ -85,6 +87,7 @@ impl GameModeApp {
                 BackendMsg::HeroicMhStatus(b)  => self.heroic_mh = b,
                 BackendMsg::SteamGmStatus(b)   => self.steam_gm = b,
                 BackendMsg::SteamMhStatus(b)   => self.steam_mh = b,
+                BackendMsg::AiHookStatus(b)    => self.ai_hook = b,
                 BackendMsg::Distro(s)          => self.distro = s,
                 BackendMsg::StatusDone => {
                     self.busy = false;
@@ -375,6 +378,36 @@ impl eframe::App for GameModeApp {
 
                         ui.add_space(8.0);
 
+                        // ── AI models (llama.cpp) while gaming ─────
+                        card_frame().show(ui, |ui| {
+                            card_title(ui, "AI-mallit pelatessa");
+                            status_row(ui, "VRAM-hook:", if self.ai_hook { "ON" } else { "OFF" });
+                            ui.add_space(4.0);
+                            ui.colored_label(
+                                SUBTEXT,
+                                RichText::new(
+                                    "Sammuttaa paikalliset llama.cpp-mallit pelin ajaksi ja \
+                                     palauttaa ne jälkeen — vapauttaa VRAM:n pelille.",
+                                )
+                                .size(11.0),
+                            );
+                            ui.add_space(6.0);
+
+                            // Install/remove the gamemode.ini [custom] hook
+                            if colored_wide_button(ui, "➕ Lisää AI-VRAM-hook → GameMode", GREEN, !self.busy) {
+                                self.busy = true;
+                                self.status_bar = "Lisätään AI-VRAM-hook...".to_string();
+                                backend::spawn_install_ai_hook(self.tx.clone(), ctx.clone());
+                            }
+                            if colored_wide_button(ui, "➖ Poista AI-VRAM-hook ← GameMode", RED, !self.busy) {
+                                self.busy = true;
+                                self.status_bar = "Poistetaan AI-VRAM-hook...".to_string();
+                                backend::spawn_remove_ai_hook(self.tx.clone(), ctx.clone());
+                            }
+                        });
+
+                        ui.add_space(8.0);
+
                         // ── Live-tilannäyttö ───────────────────
                         card_frame().show(ui, |ui| {
                             card_title(ui, "Tila");
@@ -388,6 +421,7 @@ impl eframe::App for GameModeApp {
                             status_row(ui, "Heroic MangoHud:", if self.heroic_mh { "ON" } else { "OFF" });
                             status_row(ui, "Steam GameMode:",  if self.steam_gm  { "ON" } else { "OFF" });
                             status_row(ui, "Steam MangoHud:",  if self.steam_mh  { "ON" } else { "OFF" });
+                            status_row(ui, "AI-VRAM-hook:",    if self.ai_hook   { "ON" } else { "OFF" });
                         });
 
                         ui.add_space(16.0);

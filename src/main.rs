@@ -1,3 +1,4 @@
+mod aihook;
 mod app;
 mod backend;
 mod config;

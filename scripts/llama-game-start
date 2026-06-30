@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# GameMode custom hook: runs when a game STARTS.
+# Stops the local llama.cpp models to free VRAM for the game.
+# Installed by GameMode Manager.
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+LOG="${XDG_DATA_HOME:-$HOME/.local/share}/llama-game.log"
+echo "$(date '+%F %T') GAME START -> llama stop" >> "$LOG"
+/usr/bin/systemctl --user stop llama-ornith.service llama-qwen.service >> "$LOG" 2>&1

@@ -1,2 +1,7 @@
 target/
 *.bak
+state.json
+telemetry.json
+.webui_secret_key
+.claude/
+jippii/
